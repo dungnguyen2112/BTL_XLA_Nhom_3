@@ -278,59 +278,6 @@ class SketchEffectGenerator:
         return result
 
 
-class ColorSketchGenerator:
-    """Lớp tạo hiệu ứng vẽ tay có màu - Tính năng bonus"""
-    
-    @staticmethod
-    def create_color_sketch(original_image: np.ndarray,
-                           sketch_gray: np.ndarray,
-                           color_intensity: float = 0.6,
-                           blur_color: int = 7) -> np.ndarray:
-        """
-        Tô màu lên tranh vẽ xám (giống vẽ nét đen trước, tô màu sau)
-        
-        Args:
-            original_image: Ảnh RGB gốc để lấy màu
-            sketch_gray: Tranh vẽ xám đã tạo
-            color_intensity: Độ đậm của màu (0-1)
-            blur_color: Kích thước kernel làm mịn màu
-            
-        Returns:
-            Ảnh tranh vẽ đã tô màu (RGB)
-        """
-        # Nếu ảnh gốc là xám
-        if len(original_image.shape) == 2:
-            return np.stack([sketch_gray, sketch_gray, sketch_gray], axis=2).astype(np.uint8)
-        
-        # Kiểm tra và resize sketch về cùng kích thước với ảnh gốc nếu cần
-        orig_h, orig_w = original_image.shape[:2]
-        sketch_h, sketch_w = sketch_gray.shape
-        
-        if (sketch_h, sketch_w) != (orig_h, orig_w):
-            sketch_gray = ImageResizer.bilinear_resize(sketch_gray, orig_h, orig_w)
-        
-        # Chuẩn hóa sketch về 0-1
-        sketch_normalized = sketch_gray.astype(np.float32) / 255.0
-        
-        # Làm mịn màu
-        color_smooth = np.zeros_like(original_image, dtype=np.float32)
-        for c in range(3):
-            color_smooth[:,:,c] = ImageProcessor.gaussian_blur(
-                original_image[:,:,c], kernel_size=blur_color, sigma=2.0)
-        
-        # Màu nhạt
-        color_light = color_smooth * 0.85 + 255 * 0.15
-        
-        # Kết hợp
-        result = np.zeros_like(original_image, dtype=np.float32)
-        for c in range(3):
-            dark_color = color_smooth[:,:,c] * 0.3
-            light_color = color_light[:,:,c]
-            blended = dark_color * (1 - sketch_normalized) + light_color * sketch_normalized
-            result[:,:,c] = blended * color_intensity + sketch_gray * (1 - color_intensity)
-        
-        return np.clip(result, 0, 255).astype(np.uint8)
-
 
 def maybe_downscale(img: np.ndarray, max_side: int = 800) -> np.ndarray:
     """Giảm kích thước ảnh nếu quá lớn"""
