@@ -143,6 +143,28 @@ class EdgeDetector:
         magnitude = np.sqrt(gx * gx + gy * gy)
         return gx, gy, magnitude
 
+    @staticmethod
+    def laplacian_edge_detection(image: np.ndarray) -> np.ndarray:
+        """Phát hiện biên bằng toán tử Laplacian"""
+        img = image.astype(np.float32, copy=False)
+        # Kernel Laplacian
+        laplacian = np.array([[0, -1, 0],
+                             [-1, 4, -1],
+                             [0, -1, 0]], dtype=np.float32)
+        
+        # Convolve với kernel Laplacian
+        pad = 1
+        padded = np.pad(img, ((pad, pad), (pad, pad)), mode='edge')
+        h, w = img.shape
+        output = np.zeros_like(img)
+        
+        for i in range(h):
+            for j in range(w):
+                region = padded[i:i+3, j:j+3]
+                output[i, j] = np.sum(region * laplacian)
+        
+        return output
+
 
 class EdgePreservingFilter:
     """Lớp triển khai bilateral filter"""
@@ -276,6 +298,78 @@ class SketchEffectGenerator:
                     result = np.power(result / 255.0, 0.8) * 255
 
         return result
+
+    @staticmethod
+    def create_sketch_effect_laplacian(image: np.ndarray,
+                                       blur_kernel: int = 5,
+                                       edge_threshold: float = 50.0) -> np.ndarray:
+        """Tạo hiệu ứng vẽ tay cơ bản với Laplacian"""
+        gray = ImageProcessor.to_grayscale(image)
+        blurred = ImageProcessor.gaussian_blur(gray, kernel_size=blur_kernel, sigma=1.0)
+
+        laplacian_edges = EdgeDetector.laplacian_edge_detection(blurred)
+        # Laplacian có thể có giá trị âm và dương, lấy giá trị tuyệt đối
+        laplacian_abs = np.abs(laplacian_edges)
+        laplacian_normalized = (laplacian_abs - laplacian_abs.min()) / (laplacian_abs.max() - laplacian_abs.min() + 1e-8) * 255
+        edges = np.where(laplacian_normalized > edge_threshold, 255, 0)
+        sketch = 255 - edges
+
+        return sketch
+
+    @staticmethod
+    def create_advanced_sketch_laplacian(image: np.ndarray,
+                                        blur_kernel: int = 5,
+                                        edge_threshold: float = 50.0,
+                                        blend_alpha: float = 0.3,
+                                        enhance_contrast: bool = True) -> np.ndarray:
+        """Tạo hiệu ứng vẽ tay nâng cao với bilateral filter và Laplacian"""
+        gray = ImageProcessor.to_grayscale(image)
+        blurred = EdgePreservingFilter.bilateral_filter(
+            gray, kernel_size=blur_kernel, sigma_spatial=1.5, sigma_intensity=50.0)
+
+        laplacian_edges = EdgeDetector.laplacian_edge_detection(blurred)
+        laplacian_abs = np.abs(laplacian_edges)
+        laplacian_normalized = (laplacian_abs - laplacian_abs.min()) / (laplacian_abs.max() - laplacian_abs.min() + 1e-8) * 255
+        edges = np.where(laplacian_normalized > edge_threshold, 255, 0)
+        sketch_edges = 255 - edges
+
+        if blend_alpha <= 0.01:
+            result = sketch_edges
+        else:
+            result = blend_alpha * sketch_edges + (1 - blend_alpha) * gray
+            
+            if enhance_contrast:
+                result_min = result.min()
+                result_max = result.max()
+                if result_max - result_min > 1e-8:
+                    result = (result - result_min) / (result_max - result_min) * 255
+                    result = np.power(result / 255.0, 0.8) * 255
+
+        return result
+
+    @staticmethod
+    def create_combined_sketch_laplacian(image: np.ndarray,
+                                         blur_kernel: int = 5,
+                                         edge_threshold: float = 50.0) -> np.ndarray:
+        """Tạo hiệu ứng vẽ tay gộp cả 2 phương pháp với Laplacian"""
+        # Phương pháp 1: Gaussian + Laplacian
+        sketch_basic = SketchEffectGenerator.create_sketch_effect_laplacian(
+            image, blur_kernel=blur_kernel, edge_threshold=edge_threshold * 0.8)
+        
+        # Phương pháp 2: Bilateral + Laplacian
+        sketch_advanced = SketchEffectGenerator.create_advanced_sketch_laplacian(
+            image, blur_kernel=blur_kernel, edge_threshold=edge_threshold,
+            blend_alpha=0.5, enhance_contrast=True)
+        
+        # Resize về cùng kích thước nếu khác nhau
+        if sketch_basic.shape != sketch_advanced.shape:
+            h_target, w_target = sketch_basic.shape
+            sketch_advanced = ImageResizer.bilinear_resize(sketch_advanced, h_target, w_target)
+        
+        # Blend 50-50
+        sketch = 0.5 * sketch_basic + 0.5 * sketch_advanced
+        
+        return sketch
 
 
 

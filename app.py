@@ -214,9 +214,16 @@ async def home():
                     <div class="form-group">
                         <label for="method">🎨 Phương pháp xử lý:</label>
                         <select id="method" name="method">
-                            <option value="basic">Phương pháp 1: Gaussian Blur + Sobel (Xám)</option>
-                            <option value="advanced" selected>Phương pháp 2: Bilateral Filter + Sobel (Xám)</option>
-                            <option value="combined">Phương pháp 3: Gộp cả 2 phương pháp (Xám)</option>
+                            <optgroup label="Sobel Edge Detection">
+                                <option value="basic">Phương pháp 1: Gaussian Blur + Sobel (Xám)</option>
+                                <option value="advanced" selected>Phương pháp 2: Bilateral Filter + Sobel (Xám)</option>
+                                <option value="combined">Phương pháp 3: Gộp cả 2 phương pháp Sobel (Xám)</option>
+                            </optgroup>
+                            <optgroup label="Laplacian Edge Detection">
+                                <option value="laplacian_basic">Phương pháp 4: Gaussian Blur + Laplacian (Xám)</option>
+                                <option value="laplacian_advanced">Phương pháp 5: Bilateral Filter + Laplacian (Xám)</option>
+                                <option value="laplacian_combined">Phương pháp 6: Gộp cả 2 phương pháp Laplacian (Xám)</option>
+                            </optgroup>
                         </select>
                     </div>
 
@@ -264,9 +271,12 @@ async def home():
                     const originalUrl = URL.createObjectURL(fileInput.files[0]);
 
                     const methodNames = {
-                        'basic': 'Phương pháp 1 (Xám)',
-                        'advanced': 'Phương pháp 2 (Xám)',
-                        'combined': 'Phương pháp 3 (Xám)'
+                        'basic': 'Phương pháp 1: Sobel (Xám)',
+                        'advanced': 'Phương pháp 2: Sobel (Xám)',
+                        'combined': 'Phương pháp 3: Sobel (Xám)',
+                        'laplacian_basic': 'Phương pháp 4: Laplacian (Xám)',
+                        'laplacian_advanced': 'Phương pháp 5: Laplacian (Xám)',
+                        'laplacian_combined': 'Phương pháp 6: Laplacian (Xám)'
                     };
                     const methodName = methodNames[method] || method;
 
@@ -306,7 +316,7 @@ async def convert_to_sketch(
     
     Parameters:
     - file: File ảnh upload
-    - method: 'basic', 'advanced' hoặc 'combined'
+    - method: 'basic', 'advanced', 'combined' (Sobel) hoặc 'laplacian_basic', 'laplacian_advanced', 'laplacian_combined' (Laplacian)
     """
     try:
         # Thông số tối ưu cân bằng giữa chất lượng và tốc độ
@@ -324,14 +334,14 @@ async def convert_to_sketch(
         
         # Xử lý ảnh với thông số tối ưu cho từng phương pháp
         if method == "basic":
-            # Basic: edge_threshold thấp hơn để giữ nhiều nét
+            # Basic Sobel: edge_threshold thấp hơn để giữ nhiều nét
             sketch = SketchEffectGenerator.create_sketch_effect(
                 image,
                 blur_kernel=blur_kernel,
                 edge_threshold=edge_threshold * 0.8  # 30 * 0.8 = 24
             )
         elif method == "combined":
-            # Phương pháp gộp: Tạo cả 2 và blend 50-50
+            # Phương pháp gộp Sobel: Tạo cả 2 và blend 50-50
             sketch_basic = SketchEffectGenerator.create_sketch_effect(
                 image,
                 blur_kernel=blur_kernel,
@@ -355,8 +365,31 @@ async def convert_to_sketch(
             # Blend 50-50
             sketch = 0.5 * sketch_basic + 0.5 * sketch_advanced
             
-        else:  # advanced
-            # Advanced: blend_alpha cao hơn để giữ texture mịn
+        elif method == "laplacian_basic":
+            # Basic Laplacian: edge_threshold thấp hơn để giữ nhiều nét
+            sketch = SketchEffectGenerator.create_sketch_effect_laplacian(
+                image,
+                blur_kernel=blur_kernel,
+                edge_threshold=edge_threshold * 0.8
+            )
+        elif method == "laplacian_advanced":
+            # Advanced Laplacian: blend_alpha cao hơn để giữ texture mịn
+            sketch = SketchEffectGenerator.create_advanced_sketch_laplacian(
+                image,
+                blur_kernel=blur_kernel,
+                edge_threshold=edge_threshold,
+                blend_alpha=0.5,  # Tăng lên 0.5 để giữ chi tiết
+                enhance_contrast=True
+            )
+        elif method == "laplacian_combined":
+            # Phương pháp gộp Laplacian: Tạo cả 2 và blend 50-50
+            sketch = SketchEffectGenerator.create_combined_sketch_laplacian(
+                image,
+                blur_kernel=blur_kernel,
+                edge_threshold=edge_threshold
+            )
+        else:  # advanced (Sobel)
+            # Advanced Sobel: blend_alpha cao hơn để giữ texture mịn
             sketch = SketchEffectGenerator.create_advanced_sketch(
                 image,
                 blur_kernel=blur_kernel,
