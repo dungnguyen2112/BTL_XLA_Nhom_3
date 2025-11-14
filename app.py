@@ -8,9 +8,16 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import numpy as np
 from io import BytesIO
+import asyncio
+import gc
 from sketch_processor import (
     ImageProcessor, SketchEffectGenerator, maybe_downscale
 )
+
+# Global limits
+MAX_SIDE = 800         # max long side in pixels to downscale to (giảm để tránh timeout)
+MAX_UPLOAD_MB = 8      # max upload size in megabytes
+MAX_PIXELS = 800 * 800  # max total pixels để tránh quá tải memory
 
 app = FastAPI(
     title="Image to Sketch Converter",
@@ -319,18 +326,48 @@ async def convert_to_sketch(
     - method: 'basic', 'advanced', 'combined' (Sobel) hoặc 'laplacian_basic', 'laplacian_advanced', 'laplacian_combined' (Laplacian)
     """
     try:
-        # Thông số tối ưu cân bằng giữa chất lượng và tốc độ
-        blur_kernel = 5
-        edge_threshold = 30.0  # Giảm ngưỡng để giữ nhiều nét hơn
-        max_size = 1200  # Tăng lên 1200 để giữ chi tiết tốt hơn
-        
-        # Đọc ảnh
+        # Đọc ảnh (kiểm tra kích thước upload trước)
         contents = await file.read()
+        if len(contents) > MAX_UPLOAD_MB * 1024 * 1024:
+            raise HTTPException(status_code=413, detail=f"File quá lớn. Giới hạn {MAX_UPLOAD_MB} MB.")
+
         image = ImageProcessor.load_image_from_bytes(contents)
         
-        # Downscale nếu cần
-        if max_size > 0:
-            image = maybe_downscale(image, max_side=max_size)
+        # Kiểm tra và downscale sớm để tránh timeout
+        if image.ndim == 2:
+            h, w = image.shape
+        else:
+            h, w = image.shape[:2]
+        total_pixels = h * w
+        
+        # Downscale nếu quá lớn
+        if MAX_SIDE > 0:
+            image = maybe_downscale(image, max_side=MAX_SIDE)
+            if image.ndim == 2:
+                h, w = image.shape
+            else:
+                h, w = image.shape[:2]
+            total_pixels = h * w
+        
+        # Kiểm tra lại sau downscale
+        if total_pixels > MAX_PIXELS:
+            # Downscale thêm nếu vẫn quá lớn
+            scale = np.sqrt(MAX_PIXELS / total_pixels)
+            new_h = max(1, int(h * scale))
+            new_w = max(1, int(w * scale))
+            from sketch_processor import ImageResizer
+            image = ImageResizer.bilinear_resize(image, new_h, new_w)
+        
+        # Tính toán kernel size động dựa trên kích thước ảnh
+        # Với ảnh lớn, dùng kernel nhỏ hơn để tăng tốc
+        if total_pixels > 500000:  # > 500k pixels
+            blur_kernel = 3  # Giảm kernel size cho ảnh lớn
+        elif total_pixels > 300000:  # > 300k pixels
+            blur_kernel = 4
+        else:
+            blur_kernel = 5
+        
+        edge_threshold = 30.0  # Giảm ngưỡng để giữ nhiều nét hơn
         
         # Xử lý ảnh với thông số tối ưu cho từng phương pháp
         if method == "basic":
@@ -401,6 +438,10 @@ async def convert_to_sketch(
         # Chuyển sang PIL Image
         pil_image = ImageProcessor.array_to_pil(sketch)
         
+        # Cleanup memory
+        del image, sketch
+        gc.collect()
+        
         # Trả về ảnh
         img_io = BytesIO()
         pil_image.save(img_io, 'PNG', quality=95)
@@ -408,6 +449,10 @@ async def convert_to_sketch(
         
         return StreamingResponse(img_io, media_type="image/png")
         
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=504, detail="Xử lý ảnh quá lâu. Vui lòng thử với ảnh nhỏ hơn.")
+    except MemoryError:
+        raise HTTPException(status_code=507, detail="Ảnh quá lớn, không đủ bộ nhớ. Vui lòng giảm kích thước ảnh.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi xử lý ảnh: {str(e)}")
 
@@ -417,76 +462,6 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "ok", "message": "API đang hoạt động"}
 
-
-@app.post("/compare/")
-async def compare_methods(
-    file: UploadFile = File(...)
-):
-    """
-    So sánh cả 3 phương pháp cùng lúc với thông số tối ưu cố định
-    Trả về JSON với 3 ảnh base64
-    """
-    try:
-        import base64
-        
-        # Thông số tối ưu cân bằng giữa chất lượng và tốc độ
-        blur_kernel = 5
-        edge_threshold = 30.0
-        max_size = 1200
-        
-        # Đọc ảnh
-        contents = await file.read()
-        image = ImageProcessor.load_image_from_bytes(contents)
-        
-        # Downscale nếu cần
-        if max_size > 0:
-            image = maybe_downscale(image, max_side=max_size)
-        
-        results = {}
-        
-        # Method 1: Basic - ngưỡng thấp để giữ nhiều nét
-        sketch_basic = SketchEffectGenerator.create_sketch_effect(
-            image, blur_kernel=blur_kernel, 
-            edge_threshold=edge_threshold * 0.8
-        )
-        img_io = BytesIO()
-        ImageProcessor.array_to_pil(sketch_basic).save(img_io, 'PNG')
-        results['basic'] = base64.b64encode(img_io.getvalue()).decode()
-        
-        # Method 2: Advanced - blend cao để giữ texture
-        sketch_advanced = SketchEffectGenerator.create_advanced_sketch(
-            image, blur_kernel=blur_kernel, edge_threshold=edge_threshold,
-            blend_alpha=0.5, enhance_contrast=True
-        )
-        img_io = BytesIO()
-        ImageProcessor.array_to_pil(sketch_advanced).save(img_io, 'PNG')
-        results['advanced'] = base64.b64encode(img_io.getvalue()).decode()
-        
-        # Method 3: Combined
-        if sketch_basic.shape != sketch_advanced.shape:
-            from sketch_processor import ImageResizer
-            h_target, w_target = sketch_basic.shape
-            sketch_advanced_resized = ImageResizer.bilinear_resize(sketch_advanced, h_target, w_target)
-            sketch_combined = 0.5 * sketch_basic + 0.5 * sketch_advanced_resized
-        else:
-            sketch_combined = 0.5 * sketch_basic + 0.5 * sketch_advanced
-        
-        img_io = BytesIO()
-        ImageProcessor.array_to_pil(sketch_combined).save(img_io, 'PNG')
-        results['combined'] = base64.b64encode(img_io.getvalue()).decode()
-        
-        return {
-            "success": True,
-            "results": results,
-            "info": {
-                "blur_kernel": blur_kernel,
-                "edge_threshold": edge_threshold,
-                "image_shape": image.shape
-            }
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Lỗi so sánh: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

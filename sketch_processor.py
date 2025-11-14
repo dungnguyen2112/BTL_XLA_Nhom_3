@@ -68,48 +68,61 @@ class ImageResizer:
     
     @staticmethod
     def bilinear_resize(image: np.ndarray, new_height: int, new_width: int) -> np.ndarray:
-        """Resize ảnh bằng bilinear interpolation"""
+        """Resize ảnh bằng bilinear interpolation - tối ưu với vectorization"""
         is_color = len(image.shape) == 3
         if is_color:
             old_h, old_w, channels = image.shape
-            output = np.zeros((new_height, new_width, channels), dtype=image.dtype)
         else:
             old_h, old_w = image.shape
             channels = 1
-            output = np.zeros((new_height, new_width), dtype=image.dtype)
             image = image[:, :, np.newaxis]
         
+        # Tính toán scale factors
         scale_y = (old_h - 1) / (new_height - 1) if new_height > 1 else 0
         scale_x = (old_w - 1) / (new_width - 1) if new_width > 1 else 0
         
-        for i in range(new_height):
-            for j in range(new_width):
-                old_i = i * scale_y
-                old_j = j * scale_x
-                
-                i0 = int(np.floor(old_i))
-                i1 = min(i0 + 1, old_h - 1)
-                j0 = int(np.floor(old_j))
-                j1 = min(j0 + 1, old_w - 1)
-                
-                di = old_i - i0
-                dj = old_j - j0
-                
-                for c in range(channels):
-                    p00 = image[i0, j0, c]
-                    p01 = image[i0, j1, c]
-                    p10 = image[i1, j0, c]
-                    p11 = image[i1, j1, c]
-                    
-                    val = (1 - di) * (1 - dj) * p00 + \
-                          (1 - di) * dj * p01 + \
-                          di * (1 - dj) * p10 + \
-                          di * dj * p11
-                    
-                    if is_color:
-                        output[i, j, c] = val
-                    else:
-                        output[i, j] = val
+        # Vectorize: tính toán tất cả indices cùng lúc
+        i_coords = np.arange(new_height, dtype=np.float32) * scale_y
+        j_coords = np.arange(new_width, dtype=np.float32) * scale_x
+        
+        i0 = np.floor(i_coords).astype(np.int32)
+        i1 = np.minimum(i0 + 1, old_h - 1)
+        j0 = np.floor(j_coords).astype(np.int32)
+        j1 = np.minimum(j0 + 1, old_w - 1)
+        
+        di = i_coords - i0
+        dj = j_coords - j0
+        
+        # Broadcast để tính toán weights
+        di_2d = di[:, np.newaxis]  # (new_h, 1)
+        dj_2d = dj[np.newaxis, :]  # (1, new_w)
+        
+        w00 = (1 - di_2d) * (1 - dj_2d)  # (new_h, new_w)
+        w01 = (1 - di_2d) * dj_2d
+        w10 = di_2d * (1 - dj_2d)
+        w11 = di_2d * dj_2d
+        
+        # Reshape để vectorize
+        if is_color:
+            output = np.zeros((new_height, new_width, channels), dtype=image.dtype)
+        else:
+            output = np.zeros((new_height, new_width), dtype=image.dtype)
+        
+        # Vectorized interpolation cho từng channel
+        for c in range(channels):
+            # Lấy các pixel values với advanced indexing
+            p00 = image[i0[:, np.newaxis], j0[np.newaxis, :], c]
+            p01 = image[i0[:, np.newaxis], j1[np.newaxis, :], c]
+            p10 = image[i1[:, np.newaxis], j0[np.newaxis, :], c]
+            p11 = image[i1[:, np.newaxis], j1[np.newaxis, :], c]
+            
+            # Bilinear interpolation
+            val = w00 * p00 + w01 * p01 + w10 * p10 + w11 * p11
+            
+            if is_color:
+                output[:, :, c] = val
+            else:
+                output[:, :] = val
         
         if not is_color:
             output = output.squeeze()
@@ -219,6 +232,15 @@ class EdgePreservingFilter:
     def bilateral_filter(image: np.ndarray, kernel_size: int = 5, 
                         sigma_spatial: float = 1.0, sigma_intensity: float = 50.0) -> np.ndarray:
         """Bilateral filter - làm mịn bảo toàn biên"""
+        h, w = image.shape
+        total_pixels = h * w
+        
+        # Tự động giảm kernel size cho ảnh lớn để tăng tốc
+        if total_pixels > 500000 and kernel_size > 3:  # > 500k pixels
+            kernel_size = 3
+        elif total_pixels > 300000 and kernel_size > 4:  # > 300k pixels
+            kernel_size = 4
+        
         # Thử Numba
         out_numba = EdgePreservingFilter._bilateral_filter_numba(
             image, kernel_size, sigma_spatial, sigma_intensity)
@@ -226,7 +248,6 @@ class EdgePreservingFilter:
             return out_numba.astype(image.dtype, copy=False)
 
         # Fallback Python
-        h, w = image.shape
         output = np.zeros_like(image)
         pad = kernel_size // 2
         padded = np.pad(image, ((pad, pad), (pad, pad)), mode='edge')
@@ -374,7 +395,7 @@ class SketchEffectGenerator:
 
 
 def maybe_downscale(img: np.ndarray, max_side: int = 800) -> np.ndarray:
-    """Giảm kích thước ảnh nếu quá lớn"""
+    """Giảm kích thước ảnh nếu quá lớn - tối ưu cho ảnh lớn"""
     if img is None:
         return img
     if img.ndim == 2:
@@ -384,8 +405,22 @@ def maybe_downscale(img: np.ndarray, max_side: int = 800) -> np.ndarray:
     max_dim = max(h, w)
     if max_dim <= max_side:
         return img
+    
+    # Tính toán scale factor
     scale = max_dim / float(max_side)
-    new_h = int(round(h / scale))
-    new_w = int(round(w / scale))
+    new_h = max(1, int(round(h / scale)))
+    new_w = max(1, int(round(w / scale)))
+    
+    # Với ảnh rất lớn, có thể downscale nhiều lần để tăng tốc
+    if max_dim > max_side * 2:
+        # Downscale 2 lần để tăng tốc
+        intermediate_size = int(max_side * 1.5)
+        if max_dim > intermediate_size:
+            scale1 = max_dim / float(intermediate_size)
+            h1 = max(1, int(round(h / scale1)))
+            w1 = max(1, int(round(w / scale1)))
+            img = ImageResizer.bilinear_resize(img, h1, w1)
+            h, w = h1, w1
+    
     arr = ImageResizer.bilinear_resize(img, new_h, new_w)
     return arr
