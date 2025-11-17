@@ -64,68 +64,46 @@ class ImageProcessor:
 
 
 class ImageResizer:
-    """Lớp tự triển khai resize ảnh bằng nội suy song tuyến tính"""
+    """Lớp tự triển khai resize ảnh bằng Nearest Neighbor Interpolation"""
     
     @staticmethod
-    def bilinear_resize(image: np.ndarray, new_height: int, new_width: int) -> np.ndarray:
-        """Resize ảnh bằng bilinear interpolation - tối ưu với vectorization"""
+    def nearest_neighbor_resize(image: np.ndarray, new_height: int, new_width: int) -> np.ndarray:
+        """Resize ảnh bằng Nearest Neighbor Interpolation - nhanh và đơn giản"""
+        if new_height <= 0 or new_width <= 0:
+            raise ValueError(f"Kích thước phải > 0, nhận được: {new_height}x{new_width}")
+        
         is_color = len(image.shape) == 3
         if is_color:
             old_h, old_w, channels = image.shape
         else:
             old_h, old_w = image.shape
-            channels = 1
-            image = image[:, :, np.newaxis]
         
-        # Tính toán scale factors
-        scale_y = (old_h - 1) / (new_height - 1) if new_height > 1 else 0
-        scale_x = (old_w - 1) / (new_width - 1) if new_width > 1 else 0
+        # Xử lý trường hợp kích thước đặc biệt
+        if old_h == 0 or old_w == 0:
+            raise ValueError(f"Ảnh đầu vào có kích thước không hợp lệ: {old_h}x{old_w}")
         
-        # Vectorize: tính toán tất cả indices cùng lúc
-        i_coords = np.arange(new_height, dtype=np.float32) * scale_y
-        j_coords = np.arange(new_width, dtype=np.float32) * scale_x
-        
-        i0 = np.floor(i_coords).astype(np.int32)
-        i1 = np.minimum(i0 + 1, old_h - 1)
-        j0 = np.floor(j_coords).astype(np.int32)
-        j1 = np.minimum(j0 + 1, old_w - 1)
-        
-        di = i_coords - i0
-        dj = j_coords - j0
-        
-        # Broadcast để tính toán weights
-        di_2d = di[:, np.newaxis]  # (new_h, 1)
-        dj_2d = dj[np.newaxis, :]  # (1, new_w)
-        
-        w00 = (1 - di_2d) * (1 - dj_2d)  # (new_h, new_w)
-        w01 = (1 - di_2d) * dj_2d
-        w10 = di_2d * (1 - dj_2d)
-        w11 = di_2d * dj_2d
-        
-        # Reshape để vectorize
-        if is_color:
-            output = np.zeros((new_height, new_width, channels), dtype=image.dtype)
+        # Tính toán vị trí pixel trong ảnh gốc
+        if new_height == 1:
+            y_indices = np.array([old_h // 2], dtype=np.int32)
         else:
-            output = np.zeros((new_height, new_width), dtype=image.dtype)
+            y_indices = np.round(np.linspace(0, old_h - 1, new_height)).astype(np.int32)
         
-        # Vectorized interpolation cho từng channel
-        for c in range(channels):
-            # Lấy các pixel values với advanced indexing
-            p00 = image[i0[:, np.newaxis], j0[np.newaxis, :], c]
-            p01 = image[i0[:, np.newaxis], j1[np.newaxis, :], c]
-            p10 = image[i1[:, np.newaxis], j0[np.newaxis, :], c]
-            p11 = image[i1[:, np.newaxis], j1[np.newaxis, :], c]
-            
-            # Bilinear interpolation
-            val = w00 * p00 + w01 * p01 + w10 * p10 + w11 * p11
-            
-            if is_color:
-                output[:, :, c] = val
-            else:
-                output[:, :] = val
+        if new_width == 1:
+            x_indices = np.array([old_w // 2], dtype=np.int32)
+        else:
+            x_indices = np.round(np.linspace(0, old_w - 1, new_width)).astype(np.int32)
         
-        if not is_color:
-            output = output.squeeze()
+        # Đảm bảo indices trong phạm vi hợp lệ
+        y_indices = np.clip(y_indices, 0, old_h - 1)
+        x_indices = np.clip(x_indices, 0, old_w - 1)
+        
+        # Lấy pixel gần nhất
+        if is_color:
+            # Với ảnh color, dùng advanced indexing
+            output = image[y_indices[:, np.newaxis], x_indices[np.newaxis, :], :]
+        else:
+            # Với ảnh grayscale
+            output = image[y_indices[:, np.newaxis], x_indices[np.newaxis, :]]
         
         return output
 
@@ -385,7 +363,7 @@ class SketchEffectGenerator:
         # Resize về cùng kích thước nếu khác nhau
         if sketch_basic.shape != sketch_advanced.shape:
             h_target, w_target = sketch_basic.shape
-            sketch_advanced = ImageResizer.bilinear_resize(sketch_advanced, h_target, w_target)
+            sketch_advanced = ImageResizer.nearest_neighbor_resize(sketch_advanced, h_target, w_target)
         
         # Blend 50-50
         sketch = 0.5 * sketch_basic + 0.5 * sketch_advanced
@@ -419,8 +397,8 @@ def maybe_downscale(img: np.ndarray, max_side: int = 800) -> np.ndarray:
             scale1 = max_dim / float(intermediate_size)
             h1 = max(1, int(round(h / scale1)))
             w1 = max(1, int(round(w / scale1)))
-            img = ImageResizer.bilinear_resize(img, h1, w1)
+            img = ImageResizer.nearest_neighbor_resize(img, h1, w1)
             h, w = h1, w1
     
-    arr = ImageResizer.bilinear_resize(img, new_h, new_w)
+    arr = ImageResizer.nearest_neighbor_resize(img, new_h, new_w)
     return arr

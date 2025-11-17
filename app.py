@@ -356,7 +356,7 @@ async def convert_to_sketch(
             new_h = max(1, int(h * scale))
             new_w = max(1, int(w * scale))
             from sketch_processor import ImageResizer
-            image = ImageResizer.bilinear_resize(image, new_h, new_w)
+            image = ImageResizer.nearest_neighbor_resize(image, new_h, new_w)
         
         # Tính toán kernel size động dựa trên kích thước ảnh
         # Với ảnh lớn, dùng kernel nhỏ hơn để tăng tốc
@@ -397,7 +397,7 @@ async def convert_to_sketch(
             if sketch_basic.shape != sketch_advanced.shape:
                 from sketch_processor import ImageResizer
                 h_target, w_target = sketch_basic.shape
-                sketch_advanced = ImageResizer.bilinear_resize(sketch_advanced, h_target, w_target)
+                sketch_advanced = ImageResizer.nearest_neighbor_resize(sketch_advanced, h_target, w_target)
             
             # Blend 50-50
             sketch = 0.5 * sketch_basic + 0.5 * sketch_advanced
