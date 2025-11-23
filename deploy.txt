@@ -1,5 +1,5 @@
 # từ máy Windows (PowerShell)
-scp -r C:\BTLXLA YOUR_SSH_USER@20.196.153.226:/home/ntdung/BTLXLA
+scp -r C:\BTLXLA\* ntdung@20.196.153.226:/home/ntdung/BTLXLA
 # trên server: di chuyển vào thư mục deploy
 ssh YOUR_SSH_USER@20.196.153.226
 sudo mkdir -p /var/www/ntdung.systems
