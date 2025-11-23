@@ -53,180 +53,185 @@ async def home():
             }
             body {
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: #f5f5f5;
                 min-height: 100vh;
                 padding: 20px;
             }
             .container {
-                max-width: 1200px;
+                max-width: 1000px;
                 margin: 0 auto;
                 background: white;
-                border-radius: 20px;
-                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-                padding: 40px;
+                border-radius: 8px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                padding: 30px;
             }
             h1 {
                 text-align: center;
                 color: #333;
-                margin-bottom: 10px;
-                font-size: 2.5em;
+                margin-bottom: 8px;
+                font-size: 1.8em;
+                font-weight: 600;
             }
             .subtitle {
                 text-align: center;
                 color: #666;
-                margin-bottom: 40px;
-                font-size: 1.1em;
+                margin-bottom: 30px;
+                font-size: 0.95em;
             }
             .upload-section {
-                background: #f8f9fa;
-                border-radius: 15px;
-                padding: 30px;
-                margin-bottom: 30px;
+                background: #fafafa;
+                border: 1px solid #e0e0e0;
+                border-radius: 6px;
+                padding: 25px;
+                margin-bottom: 25px;
             }
             .form-group {
-                margin-bottom: 20px;
+                margin-bottom: 18px;
             }
             label {
                 display: block;
-                margin-bottom: 8px;
-                font-weight: 600;
-                color: #333;
+                margin-bottom: 6px;
+                font-weight: 500;
+                color: #444;
+                font-size: 0.95em;
             }
             input[type="file"] {
                 width: 100%;
-                padding: 12px;
-                border: 2px dashed #667eea;
-                border-radius: 10px;
+                padding: 10px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
                 background: white;
                 cursor: pointer;
-                transition: all 0.3s;
+                font-size: 14px;
             }
             input[type="file"]:hover {
-                border-color: #764ba2;
-                background: #f0f0f0;
+                border-color: #999;
             }
             select, input[type="number"] {
                 width: 100%;
-                padding: 12px;
-                border: 2px solid #e0e0e0;
-                border-radius: 10px;
-                font-size: 16px;
-                transition: border 0.3s;
+                padding: 10px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 14px;
+                background: white;
             }
             select:focus, input[type="number"]:focus {
                 outline: none;
-                border-color: #667eea;
+                border-color: #666;
             }
             small {
                 display: block;
-                margin-top: 5px;
-                color: #666;
+                margin-top: 4px;
+                color: #777;
                 font-size: 12px;
-                line-height: 1.4;
+                line-height: 1.3;
             }
             .btn-group {
                 display: flex;
-                gap: 15px;
-                margin-top: 25px;
+                gap: 10px;
+                margin-top: 20px;
             }
             button {
                 flex: 1;
-                padding: 15px 30px;
-                font-size: 18px;
-                font-weight: 600;
+                padding: 12px 24px;
+                font-size: 15px;
+                font-weight: 500;
                 border: none;
-                border-radius: 10px;
+                border-radius: 4px;
                 cursor: pointer;
-                transition: all 0.3s;
+                transition: background 0.2s;
                 color: white;
             }
             .btn-primary {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: #4a5568;
             }
             .btn-primary:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+                background: #2d3748;
             }
             .btn-secondary {
-                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                background: #718096;
             }
             .btn-secondary:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 10px 20px rgba(245, 87, 108, 0.3);
+                background: #4a5568;
             }
             .results {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
                 gap: 20px;
-                margin-top: 30px;
+                margin-top: 25px;
             }
             .result-card {
-                background: #f8f9fa;
-                border-radius: 15px;
-                padding: 20px;
+                background: #fafafa;
+                border: 1px solid #e0e0e0;
+                border-radius: 6px;
+                padding: 15px;
                 text-align: center;
             }
             .result-card h3 {
-                margin-bottom: 15px;
+                margin-bottom: 12px;
                 color: #333;
+                font-size: 1.1em;
+                font-weight: 500;
             }
             .result-card img {
                 width: 100%;
-                border-radius: 10px;
-                box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+                border-radius: 4px;
+                border: 1px solid #ddd;
             }
             #loading {
                 display: none;
                 text-align: center;
                 padding: 20px;
-                color: #667eea;
-                font-size: 18px;
-                font-weight: 600;
+                color: #555;
+                font-size: 15px;
             }
             .spinner {
-                border: 4px solid #f3f3f3;
-                border-top: 4px solid #667eea;
+                border: 3px solid #f0f0f0;
+                border-top: 3px solid #666;
                 border-radius: 50%;
-                width: 50px;
-                height: 50px;
+                width: 40px;
+                height: 40px;
                 animation: spin 1s linear infinite;
-                margin: 20px auto;
+                margin: 15px auto;
             }
             @keyframes spin {
                 0% { transform: rotate(0deg); }
                 100% { transform: rotate(360deg); }
             }
             .info-box {
-                background: #e3f2fd;
-                border-left: 4px solid #2196F3;
-                padding: 15px;
-                border-radius: 5px;
-                margin-bottom: 20px;
+                background: #f0f7ff;
+                border-left: 3px solid #4a90e2;
+                padding: 12px 15px;
+                border-radius: 4px;
+                margin-bottom: 18px;
             }
             .info-box h4 {
-                color: #1976D2;
-                margin-bottom: 5px;
+                color: #2c5aa0;
+                margin-bottom: 4px;
+                font-size: 0.95em;
+                font-weight: 500;
             }
             .info-box p {
                 color: #555;
-                line-height: 1.6;
+                line-height: 1.5;
+                font-size: 0.9em;
             }
         </style>
     </head>
     <body>
         <div class="container">
-            <h1>🎨 Chuyển Ảnh Thành Tranh Vẽ</h1>
+            <h1>Chuyển Ảnh Thành Tranh Vẽ</h1>
             <p class="subtitle">Đề tài 4 - Xử lý ảnh INT13146</p>
 
             <div class="upload-section">
                 <form id="uploadForm" enctype="multipart/form-data">
                     <div class="form-group">
-                        <label for="file">📁 Chọn ảnh (JPG, PNG, BMP):</label>
+                        <label for="file">Chọn ảnh (JPG, PNG, BMP):</label>
                         <input type="file" id="file" name="file" accept="image/*" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="method">🎨 Phương pháp xử lý:</label>
+                        <label for="method">Phương pháp xử lý:</label>
                         <select id="method" name="method">
                             <optgroup label="Sobel Edge Detection">
                                 <option value="basic">Phương pháp 1: Gaussian Blur + Sobel (Xám)</option>
@@ -242,37 +247,37 @@ async def home():
                     </div>
 
                     <div class="info-box">
-                        <h4>⚙️ Tham số điều chỉnh (Tùy chọn)</h4>
+                        <h4>Tham số điều chỉnh (Tùy chọn)</h4>
                         <p>Bạn có thể điều chỉnh các tham số để tùy chỉnh kết quả. Để mặc định nếu không chắc chắn.</p>
                     </div>
 
                     <div class="form-group">
-                        <label for="blur_kernel">🔲 Kích thước kernel làm mờ (3-15, mặc định: 5):</label>
+                        <label for="blur_kernel">Kích thước kernel làm mờ (3-15):</label>
                         <input type="number" id="blur_kernel" name="blur_kernel" min="3" max="15" step="1" value="5">
-                        <small style="color:#666;font-size:12px;">Kernel lớn hơn = làm mờ nhiều hơn, xử lý chậm hơn</small>
+                        <small>Kernel lớn hơn = làm mờ nhiều hơn, xử lý chậm hơn</small>
                     </div>
 
                     <div class="form-group">
-                        <label for="edge_threshold">📊 Ngưỡng phát hiện biên (10-100, mặc định: 30):</label>
+                        <label for="edge_threshold">Ngưỡng phát hiện biên (10-100):</label>
                         <input type="number" id="edge_threshold" name="edge_threshold" min="10" max="100" step="1" value="30">
-                        <small style="color:#666;font-size:12px;">Ngưỡng thấp = nhiều nét hơn, ngưỡng cao = ít nét hơn</small>
+                        <small>Ngưỡng thấp = nhiều nét hơn, ngưỡng cao = ít nét hơn</small>
                     </div>
 
                     <div class="form-group" id="blend_alpha_group">
-                        <label for="blend_alpha">🎭 Độ pha trộn (0.0-1.0, mặc định: 0.5):</label>
+                        <label for="blend_alpha">Độ pha trộn (0.0-1.0):</label>
                         <input type="number" id="blend_alpha" name="blend_alpha" min="0.0" max="1.0" step="0.1" value="0.5">
-                        <small style="color:#666;font-size:12px;">Chỉ áp dụng cho phương pháp Advanced/Combined. 0.0 = chỉ nét vẽ, 1.0 = nhiều texture gốc</small>
+                        <small>Chỉ áp dụng cho phương pháp Advanced/Combined. 0.0 = chỉ nét vẽ, 1.0 = nhiều texture gốc</small>
                     </div>
 
                     <div class="form-group">
-                        <label for="max_size">📐 Giới hạn kích thước ảnh (400-2000, mặc định: 800):</label>
+                        <label for="max_size">Giới hạn kích thước ảnh (400-2000):</label>
                         <input type="number" id="max_size" name="max_size" min="400" max="2000" step="100" value="800">
-                        <small style="color:#666;font-size:12px;">Ảnh lớn hơn sẽ được thu nhỏ. Giá trị lớn = chất lượng cao nhưng xử lý chậm hơn</small>
+                        <small>Ảnh lớn hơn sẽ được thu nhỏ. Giá trị lớn = chất lượng cao nhưng xử lý chậm hơn</small>
                     </div>
 
                     <div class="btn-group">
-                        <button type="submit" class="btn-primary">🚀 Xử lý ảnh</button>
-                        <button type="button" class="btn-secondary" onclick="location.reload()">🔄 Làm mới</button>
+                        <button type="submit" class="btn-primary">Xử lý ảnh</button>
+                        <button type="button" class="btn-secondary" onclick="location.reload()">Làm mới</button>
                     </div>
                 </form>
             </div>
@@ -350,14 +355,14 @@ async def home():
 
                     document.getElementById('results').innerHTML = `
                         <div class="result-card">
-                            <h3>📷 Ảnh gốc</h3>
+                            <h3>Ảnh gốc</h3>
                             <img src="${originalUrl}" alt="Original">
                         </div>
                         <div class="result-card">
-                            <h3>🎨 Tranh vẽ</h3>
-                            <p style="color:#666;margin-bottom:10px;font-size:14px;">${methodName}</p>
+                            <h3>Tranh vẽ</h3>
+                            <p style="color:#777;margin-bottom:10px;font-size:13px;">${methodName}</p>
                             <img src="${imageUrl}" alt="Sketch">
-                            <a href="${imageUrl}" download="sketch_${method}.png" style="display:inline-block;margin-top:15px;padding:10px 20px;background:#667eea;color:white;text-decoration:none;border-radius:5px;">💾 Tải xuống</a>
+                            <a href="${imageUrl}" download="sketch_${method}.png" style="display:inline-block;margin-top:12px;padding:8px 16px;background:#4a5568;color:white;text-decoration:none;border-radius:4px;font-size:14px;">Tải xuống</a>
                         </div>
                     `;
                 } catch (error) {
