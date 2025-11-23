@@ -31,6 +31,36 @@ class ImageProcessor:
         """Chuyển numpy array sang PIL Image"""
         img_normalized = np.clip(image_array, 0, 255).astype(np.uint8)
         return Image.fromarray(img_normalized)
+    
+    @staticmethod
+    def to_grayscale(image: np.ndarray) -> np.ndarray:
+        """Chuyển đổi ảnh RGB sang mức xám"""
+        if len(image.shape) == 2:
+            return image
+        gray = 0.299 * image[:, :, 0] + 0.587 * image[:, :, 1] + 0.114 * image[:, :, 2]
+        return gray
+
+    @staticmethod
+    def gaussian_1d_kernel(size: int, sigma: float) -> np.ndarray:
+        ax = np.arange(-size // 2 + 1., size // 2 + 1.)
+        k = np.exp(-0.5 * (ax / sigma) ** 2)
+        k = k / k.sum()
+        return k.astype(np.float32)
+
+    @staticmethod
+    def gaussian_blur(image: np.ndarray, kernel_size: int = 5, sigma: float = 1.0) -> np.ndarray:
+        """Làm mịn ảnh bằng Gaussian blur (separable)"""
+        if kernel_size < 3:
+            return image
+        k = ImageProcessor.gaussian_1d_kernel(kernel_size, sigma)
+        pad = kernel_size // 2
+        # Horizontal
+        padded_h = np.pad(image, ((0, 0), (pad, pad)), mode='edge')
+        horz = np.apply_along_axis(lambda m: np.convolve(m, k, mode='valid'), axis=1, arr=padded_h)
+        # Vertical
+        padded_v = np.pad(horz, ((pad, pad), (0, 0)), mode='edge')
+        out = np.apply_along_axis(lambda m: np.convolve(m, k, mode='valid'), axis=0, arr=padded_v)
+        return out.astype(image.dtype)
 
 
 class ImageResizer:
