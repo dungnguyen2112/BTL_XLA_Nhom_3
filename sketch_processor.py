@@ -217,7 +217,7 @@ class EdgePreservingFilter:
         if total_pixels > 500000 and kernel_size > 3:  # > 500k pixels
             kernel_size = 3
         elif total_pixels > 300000 and kernel_size > 4:  # > 300k pixels
-            kernel_size = 4
+            kernel_size = 5
         
         # Thử Numba
         out_numba = EdgePreservingFilter._bilateral_filter_numba(
