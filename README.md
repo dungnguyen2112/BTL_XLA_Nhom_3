@@ -32,72 +32,6 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8000
 
 ### POST `/convert/`
 
-Chuyển ảnh thành tranh vẽ (trả về 1 ảnh)
-
-Parameters:
-  - file: File ảnh upload
-  - method: 'basic', 'advanced', 'combined' (Sobel) hoặc 'laplacian_basic', 'laplacian_advanced', 'laplacian_combined' (Laplacian)
-  - blur_kernel: Kích thước kernel làm mờ (3-15, mặc định: 5)
-  - edge_threshold: Ngưỡng phát hiện biên (10-100, mặc định: 30.0)
-  - blend_alpha: Độ pha trộn cho advanced/combined (0.0-1.0, mặc định: 0.5)
-  - max_size: Giới hạn kích thước ảnh (400-2000, mặc định: 800)
-
-### POST `/compare/`
-
-So sánh cả 3 phương pháp cùng lúc
-
-**Parameters:**
-- `file` (file): File ảnh upload
-- `blur_kernel` (int): Kích thước kernel (mặc định: 5)
-- `edge_threshold` (float): Ngưỡng biên (mặc định: 50)
-- `max_size` (int): Giới hạn kích thước (mặc định: 800)
-
-**Response:** JSON
-```json
-{
-  "success": true,
-  "results": {
-    "basic": "base64_encoded_image...",
-    "advanced": "base64_encoded_image...",
-    "combined": "base64_encoded_image..."
-  },
-  "info": {
-    "blur_kernel": 5,
-    "edge_threshold": 50,
-    "image_shape": [480, 640, 3]
-  }
-}
-```
-
-**Ví dụ Python:**
-```python
-import requests
-import base64
-from PIL import Image
-from io import BytesIO
-
-with open('test.jpg', 'rb') as f:
-    response = requests.post(
-        'http://localhost:8000/compare/',
-        files={'file': f},
-        data={'blur_kernel': 5, 'edge_threshold': 50, 'max_size': 800}
-    )
-
-data = response.json()
-
-# Lưu cả 3 ảnh
-for method, img_base64 in data['results'].items():
-    img_data = base64.b64decode(img_base64)
-    img = Image.open(BytesIO(img_data))
-    img.save(f'sketch_{method}.png')
-
-print(f"Đã tạo 3 ảnh với kernel={data['info']['blur_kernel']}")
-```
-
-## 📡 API Endpoints (chi tiết)
-
-### POST `/convert/`
-
 Chuyển ảnh thành tranh vẽ
 
 **Parameters:**
@@ -190,7 +124,6 @@ with open('test.jpg', 'rb') as f:
 BTLXLA/
 ├── app.py                          # FastAPI web server
 ├── sketch_processor.py              # Module xử lý ảnh
-├── image_to_sketch_converter.ipynb  # Notebook demo
 ├── requirements.txt                 # Dependencies
 ├── README_API.md                    # Tài liệu này
 ├── image/                           # Thư mục ảnh input
