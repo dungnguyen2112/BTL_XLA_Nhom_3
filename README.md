@@ -34,7 +34,13 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8000
 
 Chuyển ảnh thành tranh vẽ (trả về 1 ảnh)
 
-[Chi tiết parameters ở trên]
+Parameters:
+  - file: File ảnh upload
+  - method: 'basic', 'advanced', 'combined' (Sobel) hoặc 'laplacian_basic', 'laplacian_advanced', 'laplacian_combined' (Laplacian)
+  - blur_kernel: Kích thước kernel làm mờ (3-15, mặc định: 5)
+  - edge_threshold: Ngưỡng phát hiện biên (10-100, mặc định: 30.0)
+  - blend_alpha: Độ pha trộn cho advanced/combined (0.0-1.0, mặc định: 0.5)
+  - max_size: Giới hạn kích thước ảnh (400-2000, mặc định: 800)
 
 ### POST `/compare/`
 
