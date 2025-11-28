@@ -1,4 +1,4 @@
-# 🎨 Image to Sketch Converter - FastAPI Web App
+# 🎨 Image to Sketch Converter
 
 API web để chuyển ảnh thành tranh vẽ
 
@@ -10,7 +10,7 @@ API web để chuyển ảnh thành tranh vẽ
 1. Chu Ngọc Thắng - B22DCCN807
 2. Nguyễn Trí Dũng - B22DCCN135
 
-## 🚀 Cài đặt và Chạy (Mở terminal ở dự án BTL_XLA)
+## 🚀 Cài đặt và Chạy (Mở terminal ở dự án BTL_XLA_Nhom_3)
 
 ### 1. Cài đặt dependencies
 
@@ -134,7 +134,7 @@ BTL_XLA/
 ├── .gitignore
 ├── README.md
 ├── Báo cáo/
-│   ├── Báo cáo BTL - XLA.pdf
+    ├── Báo cáo BTL - XLA.pdf
     ├── Slide BTL - XLA.pdf
 └── Code/
     ├── app.py                     # FastAPI web server
