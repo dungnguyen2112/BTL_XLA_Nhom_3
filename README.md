@@ -1,4 +1,4 @@
-# 🎨 Image to Sketch Converter
+# 🎨 Image to Sketch Converter - FastAPI Web App
 
 API web để chuyển ảnh thành tranh vẽ
 
@@ -10,7 +10,7 @@ API web để chuyển ảnh thành tranh vẽ
 1. Chu Ngọc Thắng - B22DCCN807
 2. Nguyễn Trí Dũng - B22DCCN135
 
-## 🚀 Cài đặt và Chạy (Mở terminal ở dự án BTL_XLA_Nhom_3)
+## 🚀 Cài đặt và Chạy (Mở terminal ở dự án BTL_XLA)
 
 ### 1. Cài đặt dependencies
 
@@ -98,34 +98,48 @@ with open('test.jpg', 'rb') as f:
 
 ## 🎨 Phương pháp xử lý
 
-### Phương pháp 1: Basic (Gaussian Blur + Sobel)
+### Phương pháp 1: Gaussian Blur + Sobel
 - Gaussian Blur để làm mịn
 - Sobel Edge Detection
 - Phù hợp cho ảnh đơn giản, tốc độ nhanh
 
-### Phương pháp 2: Advanced (Bilateral Filter + Sobel)
-- Bilateral Filter (edge-preserving)
+### Phương pháp 2: Bilateral Filter + Sobel
+- Bilateral Filter
 - Sobel Edge Detection
 - Blending với ảnh gốc (30%)
 - Tăng contrast
 - Kết quả tự nhiên hơn, giống vẽ tay
 
-### Phương pháp 3: Combined (Gộp cả 2)
+### Phương pháp 3: Combined 1 + 2
 - Tạo cả 2 phương pháp trên
 - Blend 50-50 để kết hợp ưu điểm cả hai
 - Nét vừa sắc (từ Gaussian) vừa mịn (từ Bilateral)
 - Phù hợp cho ảnh phức tạp
-- **Lưu ý:** Chậm hơn gấp đôi vì xử lý 2 lần
 
-## 🛠️ Thuật toán tự triển khai
+### Phương pháp 4: Gaussian Blur + Laplacian
+- Gaussian Blur để làm mịn
+- Laplacian Edge Detection
+- Tạo ra các đường biên mảnh và chi tiết hơn so với Sobel
+- Phù hợp cho ảnh kiến trúc hoặc bản vẽ kỹ thuật
 
-**100% thuật toán tự viết, không dùng OpenCV/skimage:**
-- Grayscale Conversion
-- Gaussian Blur (separable - tối ưu)
-- Sobel Edge Detection (separable - tối ưu)
-- Bilateral Filter (Numba + Python fallback)
-- Bilinear Resize
-- Contrast Enhancement
+### Phương pháp 5: Bilateral Filter + Laplacian
+- Bilateral Filter
+- Laplacian Edge Detection
+- Blending với ảnh gốc và tăng contrast
+- Tạo ra bức tranh có chiều sâu và các mảng khối rõ ràng hơn
+
+### Phương pháp 6: Combined 4 + 5
+- Kết hợp kết quả của phương pháp 4 và 5
+- Tối ưu hóa độ chi tiết, giảm thiểu nhiễu hạt tốt hơn bản Basic
+
+## 🛠️ Công nghệ sử dụng
+
+- Grayscale
+- Gaussian Blur
+- Sobel Edge Detection
+- Laplacian Edge Detection
+- Bilateral Filter
+- Nearest Neighbor Resize
 
 ## 📦 Cấu trúc project
 
@@ -134,7 +148,7 @@ BTL_XLA/
 ├── .gitignore
 ├── README.md
 ├── Báo cáo/
-    ├── Báo cáo BTL - XLA.pdf
+│   ├── Báo cáo BTL - XLA.pdf
     ├── Slide BTL - XLA.pdf
 └── Code/
     ├── app.py                     # FastAPI web server
@@ -142,75 +156,3 @@ BTL_XLA/
     ├── requirements.txt           # Dependencies
     ├── deploy.txt                 # Tài liệu deploy
 ```
-
-## 🌐 Deploy lên server
-
-### Deploy với Docker
-
-Tạo `Dockerfile`:
-
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY app.py sketch_processor.py ./
-
-EXPOSE 8000
-
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
-```
-
-Build và chạy:
-
-```bash
-docker build -t sketch-converter .
-docker run -p 8000:8000 sketch-converter
-```
-
-### Deploy lên Render.com (Free)
-
-1. Push code lên GitHub
-2. Tạo Web Service trên Render.com
-3. Connect GitHub repo
-4. Build Command: `pip install -r requirements.txt`
-5. Start Command: `uvicorn app:app --host 0.0.0.0 --port $PORT`
-
-### Deploy lên Railway.app (Free)
-
-1. Push code lên GitHub
-2. Tạo project trên Railway.app
-3. Connect GitHub repo
-4. Railway tự động detect và deploy
-
-## 🔧 Tối ưu hiệu năng
-
-1. **Giảm kích thước ảnh**: Set `max_size=800` để xử lý nhanh hơn
-2. **Dùng Numba**: Cài `numba` để tăng tốc Bilateral Filter
-3. **Chọn phương pháp Basic**: Nhanh hơn Advanced nhưng chất lượng thấp hơn
-4. **Giảm blur_kernel**: Kernel nhỏ = xử lý nhanh hơn
-
-## 🐛 Troubleshooting
-
-**Lỗi: `ModuleNotFoundError: No module named 'fastapi'`**
-```bash
-pip install -r requirements.txt
-```
-
-**Lỗi: `Address already in use`**
-```bash
-# Đổi port
-uvicorn app:app --port 8001
-```
-
-**Xử lý chậm:**
-- Giảm `max_size` xuống 600-800
-- Dùng phương pháp `basic`
-- Cài `numba`: `pip install numba`
-
-## 📝 License
-
-Dự án học tập - INT13146 Xử lý ảnh
