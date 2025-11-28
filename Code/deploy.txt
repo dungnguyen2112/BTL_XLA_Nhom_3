@@ -1,0 +1,78 @@
+# từ máy Windows (PowerShell)
+scp -r C:\BTLXLA\* ntdung@20.196.153.226:/home/ntdung/BTLXLA
+# trên server: di chuyển vào thư mục deploy
+ssh YOUR_SSH_USER@20.196.153.226
+sudo mkdir -p /var/www/ntdung.systems
+sudo mv /home/ntdung/BTLXLA/* /var/www/ntdung.systems/
+sudo chown -R ntdung:www-data /var/www/ntdung.systems
+cd /var/www/ntdung.systems
+python3 -m venv venv
+source venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+# nếu muốn gunicorn + uvicorn worker:
+pip install gunicorn uvicorn
+
+////
+sudo tee /etc/systemd/system/ntdung.service > /dev/null <<'EOF'
+[Unit]
+Description=ntdung FastAPI (gunicorn + uvicorn workers)
+After=network.target
+
+[Service]
+User=ntdung
+Group=www-data
+WorkingDirectory=/var/www/ntdung.systems
+Environment="PATH=/var/www/ntdung.systems/venv/bin"
+ExecStart=/var/www/ntdung.systems/venv/bin/gunicorn app:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:8000 --workers 2 --timeout 120
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+////
+
+sudo systemctl daemon-reload
+sudo systemctl enable ntdung.service
+sudo systemctl start ntdung.service
+sudo systemctl status ntdung.service --no-pager
+sudo journalctl -u ntdung.service -f
+
+////
+sudo tee /etc/nginx/sites-available/ntdung.systems > /dev/null <<'EOF'
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ntdung.systems www.ntdung.systems;
+
+    client_max_body_size 100M;
+
+    location /static/ {
+        alias /var/www/ntdung.systems/static/;
+        expires 30d;
+        add_header Cache-Control "public";
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header Connection "";
+        proxy_buffering off;
+    }
+}
+EOF
+////
+
+sudo ln -sf /etc/nginx/sites-available/ntdung.systems /etc/nginx/sites-enabled/ntdung.systems
+sudo nginx -t
+sudo systemctl reload nginx
+
+
+sudo apt update
+sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d ntdung.systems -d www.ntdung.systems
+sudo certbot renew --dry-run
