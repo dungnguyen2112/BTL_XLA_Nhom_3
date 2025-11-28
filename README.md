@@ -1,6 +1,14 @@
 # 🎨 Image to Sketch Converter - FastAPI Web App
 
-API web để chuyển ảnh thành tranh vẽ - Đề tài 4 INT13146
+API web để chuyển ảnh thành tranh vẽ
+
+# Lớp INT13146-20251-01 Nhóm 03 - Bài Tập Lớn Xử Lý Ảnh
+
+**Đề tài 4:** Xây dựng phần mềm chuyển ảnh thành tranh vẽ
+
+**Thành viên nhóm:**
+1. Chu Ngọc Thắng - B22DCCN807
+2. Nguyễn Trí Dũng - B22DCCN135
 
 ## 🚀 Cài đặt và Chạy (Mở terminal ở dự án BTL_XLA)
 
@@ -95,14 +103,14 @@ with open('test.jpg', 'rb') as f:
 - Sobel Edge Detection
 - Phù hợp cho ảnh đơn giản, tốc độ nhanh
 
-### Phương pháp 2: Advanced (Bilateral Filter + Sobel) ⭐ Khuyến nghị
+### Phương pháp 2: Advanced (Bilateral Filter + Sobel)
 - Bilateral Filter (edge-preserving)
 - Sobel Edge Detection
 - Blending với ảnh gốc (30%)
 - Tăng contrast
 - Kết quả tự nhiên hơn, giống vẽ tay
 
-### Phương pháp 3: Combined (Gộp cả 2) 🎨 Chất lượng cao nhất
+### Phương pháp 3: Combined (Gộp cả 2)
 - Tạo cả 2 phương pháp trên
 - Blend 50-50 để kết hợp ưu điểm cả hai
 - Nét vừa sắc (từ Gaussian) vừa mịn (từ Bilateral)
@@ -111,7 +119,7 @@ with open('test.jpg', 'rb') as f:
 
 ## 🛠️ Thuật toán tự triển khai
 
-✅ **100% thuật toán tự viết, không dùng OpenCV/skimage:**
+**100% thuật toán tự viết, không dùng OpenCV/skimage:**
 - Grayscale Conversion
 - Gaussian Blur (separable - tối ưu)
 - Sobel Edge Detection (separable - tối ưu)
@@ -122,13 +130,17 @@ with open('test.jpg', 'rb') as f:
 ## 📦 Cấu trúc project
 
 ```
-BTLXLA/
-├── app.py                          # FastAPI web server
-├── sketch_processor.py              # Module xử lý ảnh
-├── requirements.txt                 # Dependencies
-├── README_API.md                    # Tài liệu này
-├── image/                           # Thư mục ảnh input
-└── output_sketches/                 # Thư mục ảnh output
+BTL_XLA/
+├── .gitignore
+├── README.md
+├── Báo cáo/
+│   ├── Báo cáo BTL - XLA.pdf
+    ├── Slide BTL - XLA.pdf
+└── Code/
+    ├── app.py                     # FastAPI web server
+    ├── sketch_processor.py        # Module xử lý ảnh
+    ├── requirements.txt           # Dependencies
+    ├── deploy.txt                 # Tài liệu deploy
 ```
 
 ## 🌐 Deploy lên server
@@ -181,21 +193,6 @@ docker run -p 8000:8000 sketch-converter
 3. **Chọn phương pháp Basic**: Nhanh hơn Advanced nhưng chất lượng thấp hơn
 4. **Giảm blur_kernel**: Kernel nhỏ = xử lý nhanh hơn
 
-## 📊 Benchmark
-
-Thời gian xử lý (ảnh 800x600):
-
-| Phương pháp | Không Numba | Có Numba |
-|-------------|-------------|----------|
-| Basic       | ~1s         | ~1s      |
-| Advanced    | ~8s         | ~2s      |
-| Combined    | ~9s         | ~3s      |
-
-**Khuyến nghị:**
-- **Nhanh nhất**: Basic (1s)
-- **Cân bằng**: Advanced (2-8s) ⭐
-- **Chất lượng cao nhất**: Combined (3-9s) 🎨
-
 ## 🐛 Troubleshooting
 
 **Lỗi: `ModuleNotFoundError: No module named 'fastapi'`**
@@ -217,7 +214,3 @@ uvicorn app:app --port 8001
 ## 📝 License
 
 Dự án học tập - INT13146 Xử lý ảnh
-
-## 👨‍💻 Tác giả
-
-Đề tài 4: Xây dựng phần mềm chuyển ảnh thành tranh vẽ
